@@ -101,8 +101,6 @@
             context.beginPath();
             context.strokeStyle = parameters.lineColor;
             context.lineWidth = parameters.lineWidth;
-
-            console.log(backgroundType, backgroundColor, LineColor, LineWidth);
         }
         let drawing = false;
 
@@ -115,6 +113,8 @@
             y : 0
         }
         canvaId.addEventListener('mousemove', event => {
+            event.preventDefault();
+            event.stopPropagation();
             mouseLastCoordinate.x = mouseCoordinate.x;
             mouseLastCoordinate.y = mouseCoordinate.y;
 
@@ -124,6 +124,17 @@
                 draw();
             }
         })
+        canvaId.addEventListener("touchmove", event => {
+            drawing = true;
+            const touch = event.touches[0];
+            const mouseEvent = new MouseEvent("mousemove", {
+                clientX: touch.clientX,
+                clientY: touch.clientY,
+                pageX: touch.pageX,
+                pageY: touch.pageY
+            });
+            canvaId.dispatchEvent(mouseEvent);
+        }, false);
         canvaId.addEventListener('mousedown', event => {
             drawing = true;
             draw();
