@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>canvas | LAGRIDA</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div class="container">
+        <div style="margin: 5px 0px">
+            <form onsubmit="send(event)">
+                <b>Background:</b>
+                <div style="padding-left: 10px; margin: 10px 0px">
+                    <label onclick="this.parentNode.querySelector('.example').style.display='none'"><input type="radio" name="background_type" value="1" checked="true" /> Transparent</label><br />
+                    <label onclick="this.parentNode.querySelector('.example').style.display='block'"><input type="radio" name="background_type" value="0" /> Background Color :</label><br />
+                    <div class="example" style="margin: 5px 0px; padding-left: 25px; display:none">
+                        <input type="text" name="background_color" value="#FFFFFF" />
+                    </div>
+                </div>
+                <b>Line:</b>
+                <div style="padding-left: 10px; margin: 10px 0px">
+                    <div style="margin: 4px 0px">
+                        color: <input type="text" name="line_color" value="#000000" />
+                    </div>
+                    <div style="margin: 4px 0px">
+                        width: <input type="text" name="line_width" value="5" />
+                    </div>
+                </div>
+                <button type="submit">Send</button>
+            </form>
+            <div style="float:right">
+                <select onchange="extensionChange(event)">
+                    <option value="png">png</option>
+                    <option value="jpeg">jpeg</option>
+                </select> &nbsp;
+                <button class="btn" onclick="saveDraw()">Download</button>
+            </div>
+            <div style="clear:both"></div>
+        </div>
+        <canvas id="canva1"></canvas>
+    </div>
+    <script>
+        /*
+            LAGRIDA Yassine Canvas
+            lagyassine@gmail.com
+            16/05/2021
+            &copy
+        */
+
+        const canvaId = document.querySelector("#canva1");
+        const context = canvaId.getContext("2d");
+
+        canvaId.width = canvaId.parentElement.offsetWidth;
+        canvaId.height = canvaId.parentElement.offsetHeight;
+
+        window.addEventListener('resize', event => {
+            canvaId.width = canvaId.parentElement.offsetWidth;
+            canvaId.height = canvaId.parentElement.offsetHeight;
+        });
+
+        let extension = 'png';
+
+        const extensionChange = event => {
+            extension = event.target.value;
+        }
+        let parameters = {
+            backgroundType: 1,
+            backgroundColor: '#FFFFFF',
+            lineColor: '#000000',
+            lineWidth: 4
+        }
+
+        context.beginPath();
+        context.clearRect(0, 0, canvaId.width, canvaId.height);
+        context.strokeStyle = parameters.lineColor;
+        context.lineWidth = parameters.lineWidth;
+
+        const send = event => {
+            event.preventDefault();
+            const backgroundType = Number(event.target.background_type.value);
+            const backgroundColor = event.target.background_color.value;
+            const lineColor = event.target.line_color.value;
+            const lineWidth = Number(event.target.line_width.value);
+
+            parameters = {
+                backgroundType,
+                backgroundColor,
+                lineColor,
+                lineWidth
+            }
+            if(backgroundType == 1){ // transparent
+                context.beginPath();
+                context.clearRect(0, 0, canvaId.width, canvaId.height);
+            }else{
+                context.beginPath();
+                context.fillStyle = parameters.backgroundColor;
+                context.fillRect(0, 0, canvaId.width, canvaId.height);
+            }
+            context.beginPath();
+            context.strokeStyle = parameters.lineColor;
+            context.lineWidth = parameters.lineWidth;
+
+            console.log(backgroundType, backgroundColor, LineColor, LineWidth);
+        }
+        let drawing = false;
+
+        let mouseCoordinate = {
+            x : 0,
+            y : 0
+        }
+        let mouseLastCoordinate = {
+            x : 0,
+            y : 0
+        }
+        canvaId.addEventListener('mousemove', event => {
+            mouseLastCoordinate.x = mouseCoordinate.x;
+            mouseLastCoordinate.y = mouseCoordinate.y;
+
+            mouseCoordinate.x = event.pageX - canvaId.offsetLeft;
+            mouseCoordinate.y = event.pageY - canvaId.offsetTop;
+            if(drawing){
+                draw();
+            }
+        })
+        canvaId.addEventListener('mousedown', event => {
+            drawing = true;
+            draw();
+        });
+        canvaId.addEventListener('mouseup', event => {
+            drawing = false;
+
+        });
+        canvaId.addEventListener('mouseleave', event => {
+            drawing = false;
+        });
+        function draw(){
+            context.beginPath();
+            context.moveTo(mouseCoordinate.x, mouseCoordinate.y);
+            context.lineTo(mouseLastCoordinate.x, mouseLastCoordinate.y);
+            context.stroke();
+            context.closePath();
+        }
+        const saveDraw = () => {
+            let dataUrl = canvaId.toDataURL("image/" + extension, 1.0);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = dataUrl;
+            downloadLink.target = '_self';
+            downloadLink.download = 'signature';
+            downloadLink.click();
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Atoms | LAGRIDA</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.4.1/css/bootstrap.min.css" crossorigin="anonymous" />
+    <style>
+        body{
+            padding: 5px
+        }
+        #canva1 {
+            border: 2px solid #C3C3C3;
+        }
+    </style>
+</head>
+<body>
+    <div class="fluid-container">
+        <form onsubmit="addAtom(event)">
+            <div class="row">
+                <div class="col-xxl-3 col-xl-3 col-lg-4 col-md-5 col-sm-6 p-1 ml-3">
+                    <div class="form-group">
+                        <label for="protons">Number Of protons :</label>
+                        <input type="text" id="protons" name="protons" class="form-control form-control-sm" value="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="neutrons">Number Of neutrons :</label>
+                        <input type="text" id="neutrons" name="neutrons" class="form-control form-control-sm" value="4">
+                    </div>
+                    <div class="form-group">
+                        <label for="electrons">Number Of electrons :</label>
+                        <input type="text" id="electrons" name="electrons" class="form-control form-control-sm" value="4">
+                    </div>
+                    <div class="form-group">
+                        Speed : <b id="range_speed">30</b><br />
+                        <input onchange="changeRange(event)" type="range" name="speed" value="30" min="1" max="100" step="1" style="width: 100%" id="myRange" />
+                    </div>
+                    <div class="form-group">
+                        <button class="btn btn-danger" id="send" type="submit">Send</button>
+                    </div>
+                </div>
+            </div>            
+        </form>
+    </div>
+    <div>
+        <canvas id="canva1" width="500" height="500"></canvas>
+    </div>
+    <script>
+        /*
+            LAGRIDA Yassine CANVAS
+            05/05/2021
+            lagyassine@gmail.com
+            &copy;
+        */
+
+        const speedRange = document.querySelector("#range_speed");
+        const send = document.querySelector("#send");
+        const canvaId = document.querySelector("#canva1");
+        const context = canvaId.getContext("2d");
+
+        // hiddenCanvas
+        var hiddenCanvas = document.createElement("canvas");
+        var hiddenContext = hiddenCanvas.getContext("2d");
+
+        hiddenCanvas.width = canvaId.width;
+        hiddenCanvas.height = canvaId.height;
+        // start Animation
+        var animationRef0 = window.requestAnimationFrame(init);
+
+        // Parameters
+        const imgBound = 15;
+        const protonBound = 15;
+
+        var numProtons = 4;
+        var numNeutrons = 4;
+        var numElectrons = 4;
+
+        var animationRef = null;
+
+        var speed = 30;
+
+        //------------------------------------------------------------------------------
+        const boundry = {
+            width: canvaId.width,
+            height: canvaId.height
+        }
+        const ellipse = {
+            a: 250,
+            b: 40
+        }
+        //------------------------------- Functions ------------------------------------
+        const random = (a, b) => {
+            b = b + 1;
+            return (Math.floor(Math.random() * (b - a)) + a);
+        }
+        const loadImage = url => new Promise((resolve, reject) => {
+            const img = new Image();
+            img.src = url;
+            img.onload = () => {
+                resolve(img);
+            }
+        });
+        const computeCoordinates = (sign = 1, x) => {
+            return sign * (ellipse.b / ellipse.a) * Math.sqrt(ellipse.a ** 2 - x ** 2);
+        }
+        //------------------------------- Electron ------------------------------------
+        function electronProp() {
+            const r1 = Math.random();
+            const r2 = Math.random();
+            this.position = (r1 < 1 / 2 ? 1 : -1) * random(0, ellipse.a);
+            this.sign = r2 < 1 / 2 ? 1 : -1;
+            this.speed = speed;
+        }
+        //-------------------------------- Add Electrons ------------------------------
+        const addElectrons = num => {
+            let electrons0 = [];
+            for(let i=0; i < num; i++){
+                electrons0.push(new electronProp());
+            }
+            return electrons0;
+        }
+
+        var electrons = addElectrons(numElectrons);
+
+        //---------------------------- Draw Protons/Neutrons --------------------------
+        const drawProtonsNeutrons = async () => {
+            const protonImg = await loadImage('https://demos.lagrida.com/files/images/proton.png');
+            const NotronImg = await loadImage('https://demos.lagrida.com/files/images/neutron.png');
+
+            let protons = numProtons;
+            let neutrons = numNeutrons;
+            let previous = 1; // 1 proton, -1 neutron
+            for (let i = 0; i < (numProtons + numNeutrons); i++) {
+                hiddenContext.save();
+                if (i < 4) {
+                    hiddenContext.translate(boundry.width / 2, boundry.height / 2);
+                    hiddenContext.rotate((i % 2 == 0 ? 1 : -1) * Math.PI * i / 2);
+                    hiddenContext.translate(-protonBound / 2, -protonBound / 2);
+                    if (previous == 1) {
+                        if (protons > 0) {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 8, protonBound, protonBound);
+                        } else {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 8, protonBound, protonBound);
+                        }
+                    } else {
+                        if (neutrons > 0) {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 8, protonBound, protonBound);
+                        } else {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 8, protonBound, protonBound);
+                        }
+                    }
+                }
+                else if (i < 16) {
+                    hiddenContext.translate(boundry.width / 2, boundry.height / 2);
+                    hiddenContext.rotate((i % 2 == 0 ? 1 : -1) * Math.PI * i / 6);
+                    hiddenContext.translate(-protonBound / 2, -protonBound / 2);
+                    if (previous == 1) {
+                        if (protons > 0) {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 18, protonBound, protonBound);
+                        } else {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 18, protonBound, protonBound);
+                        }
+
+                    } else {
+                        if (neutrons > 0) {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 18, protonBound, protonBound);
+                        } else {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 18, protonBound, protonBound);
+                        }
+                    }
+                }
+                else if (i < 32) {
+                    hiddenContext.translate(boundry.width / 2, boundry.height / 2);
+                    hiddenContext.rotate((i % 2 == 0 ? 1 : -1) * Math.PI * i / 8);
+                    hiddenContext.translate(-protonBound / 2, -protonBound / 2);
+                    if (previous == 1) {
+                        if (protons > 0) {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 28, protonBound, protonBound);
+                        } else {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 28, protonBound, protonBound);
+                        }
+
+                    } else {
+                        if (neutrons > 0) {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 28, protonBound, protonBound);
+                        } else {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 28, protonBound, protonBound);
+                        }
+                    }
+                }
+                else if (i < 52) {
+                    hiddenContext.translate(boundry.width / 2, boundry.height / 2);
+                    hiddenContext.rotate((i % 2 == 0 ? 1 : -1) * Math.PI * i / 10);
+                    hiddenContext.translate(-protonBound / 2, -protonBound / 2);
+                    if (previous == 1) {
+                        if (protons > 0) {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 38, protonBound, protonBound);
+                        } else {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 38, protonBound, protonBound);
+                        }
+
+                    } else {
+                        if (neutrons > 0) {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 38, protonBound, protonBound);
+                        } else {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 38, protonBound, protonBound);
+                        }
+                    }
+                }
+                else if (i < 76) {
+                    hiddenContext.translate(boundry.width / 2, boundry.height / 2);
+                    hiddenContext.rotate((i % 2 == 0 ? 1 : -1) * Math.PI * i / 12);
+                    hiddenContext.translate(-protonBound / 2, -protonBound / 2);
+                    if (previous == 1) {
+                        if (protons > 0) {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 48, protonBound, protonBound);
+                        } else {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 48, protonBound, protonBound);
+                        }
+
+                    } else {
+                        if (neutrons > 0) {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 48, protonBound, protonBound);
+                        } else {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 48, protonBound, protonBound);
+                        }
+                    }
+                }
+                else if (i < 104) {
+                    hiddenContext.translate(boundry.width / 2, boundry.height / 2);
+                    hiddenContext.rotate((i % 2 == 0 ? 1 : -1) * Math.PI * i / 14);
+                    hiddenContext.translate(-protonBound / 2, -protonBound / 2);
+                    if (previous == 1) {
+                        if (protons > 0) {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 58, protonBound, protonBound);
+                        } else {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 58, protonBound, protonBound);
+                        }
+
+                    } else {
+                        if (neutrons > 0) {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 58, protonBound, protonBound);
+                        } else {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 58, protonBound, protonBound);
+                        }
+                    }
+                }
+                else if (i < 136) {
+                    hiddenContext.translate(boundry.width / 2, boundry.height / 2);
+                    hiddenContext.rotate((i % 2 == 0 ? 1 : -1) * Math.PI * i / 16);
+                    hiddenContext.translate(-protonBound / 2, -protonBound / 2);
+                    if (previous == 1) {
+                        if (protons > 0) {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 68, protonBound, protonBound);
+                        } else {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 68, protonBound, protonBound);
+                        }
+                    } else {
+                        if (neutrons > 0) {
+                            neutrons--;
+                            hiddenContext.drawImage(NotronImg, 0, 68, protonBound, protonBound);
+                        } else {
+                            protons--;
+                            hiddenContext.drawImage(protonImg, 0, 68, protonBound, protonBound);
+                        }
+                    }
+                }
+                hiddenContext.restore();
+                previous *= -1;
+            }
+        }
+        //---------------------------- Draw Electrons --------------------------
+        const drawElectrons = async () => {
+            const electronImg = await loadImage('https://demos.lagrida.com/files/images/electron.png');
+            electrons.forEach((el, index) => {
+                hiddenContext.save();
+                hiddenContext.beginPath();
+                hiddenContext.translate(boundry.width/2, boundry.height/2);
+                hiddenContext.rotate(el.angle);
+                hiddenContext.translate(-imgBound/2, -imgBound/2);
+                hiddenContext.drawImage(electronImg, el.position, computeCoordinates(el.sign, el.position), imgBound, imgBound);
+                hiddenContext.restore();
+            });
+        }
+        //----------------------- Update Electrons positions --------------------
+        const updateElectrons = async () => {
+            const electronImg = await loadImage('https://demos.lagrida.com/files/images/electron.png');
+            //hiddenContext.clearRect(0, 0, boundry.width, boundry.height);
+            
+            let direction = 1;
+            electrons.forEach((el, index) => {
+                hiddenContext.save();
+                hiddenContext.beginPath();
+                hiddenContext.translate(boundry.width/2, boundry.height/2);
+                hiddenContext.rotate(direction*Math.PI*index/electrons.length);
+                hiddenContext.translate(-imgBound/2, -imgBound/2);
+                el.position += el.speed;
+                hiddenContext.drawImage(electronImg, el.position, computeCoordinates(el.sign, el.position), imgBound, imgBound);
+                if(Math.abs(el.position) >= ellipse.a){
+                    el.sign *= -1;
+                    el.speed *= -1;
+                }
+                hiddenContext.restore();
+                //direction *= -1;
+            });
+        }
+        //---------------------------- Draw Ellipses ----------------------------
+        const drawEllipses = async () => {
+            let direction = 1;
+            electrons.forEach((el, index) => {
+                hiddenContext.save();
+                hiddenContext.beginPath();
+                hiddenContext.strokeStyle = 'rgba(0,0,0,0.15)';
+                hiddenContext.translate(boundry.width/2, boundry.height/2);
+                hiddenContext.ellipse(0, 0, ellipse.a, ellipse.b, direction*Math.PI*index/electrons.length, 0, 2*Math.PI);
+                hiddenContext.stroke();
+                hiddenContext.restore();
+            });
+        }
+        //--------------------------------- Init -----------------------------------
+        function init(){
+            (async () => {
+                hiddenContext.clearRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+                hiddenContext.globalCompositeOperation= "destination-over";
+                await drawElectrons();
+                await drawEllipses();
+                await drawProtonsNeutrons();
+                await draw();
+            })();
+        }
+        //---------------------------------- Draw ----------------------------------
+        let a = 1;
+        function draw(timestamp){
+            (async () => {
+                hiddenContext.clearRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+                await updateElectrons();
+                await drawProtonsNeutrons();
+                await drawCircle();
+                await drawEllipses();
+                context.clearRect(0, 0, canvaId.width, canvaId.height);
+                context.drawImage(hiddenCanvas, 0, 0, canvaId.width, canvaId.height);
+            })();
+            animationRef = window.requestAnimationFrame(draw);
+        }
+        //-------------------------------- Draw Circle -----------------------------
+        const drawCircle = async () => {
+            if(numElectrons > 17){
+                hiddenContext.save();
+                hiddenContext.beginPath();
+                hiddenContext.translate(boundry.width/2, boundry.height/2);
+                hiddenContext.fillStyle = 'rgba(255, 255, 255 , 0.9)';
+                hiddenContext.arc(0, 0, 68, 0, 2*Math.PI);
+                hiddenContext.fill();
+                hiddenContext.restore();
+            }
+        }
+        //------------------------------------------------------------------------------
+        const changeRange = event => {
+            speedRange.innerHTML = event.target.value;
+        }
+        const addAtom = event => {
+
+            event.preventDefault();
+
+            const numElectrons0 = Number(event.target.electrons.value);
+            const numProtons0 = Number(event.target.protons.value);
+            const numNeutrons0 = Number(event.target.neutrons.value);
+            const speed0 = Number(event.target.speed.value);
+
+            if(!Number.isInteger(numElectrons0) || !Number.isInteger(numProtons0)|| !Number.isInteger(numNeutrons0) || !Number.isInteger(speed0)){
+                alert('Please enter integers !');
+                return;
+            }
+            if((numProtons0 + numNeutrons0) >= 136){
+                alert('Please enter numProtons+numNeutrons < 136');
+                return;
+            }
+
+            numElectrons = numElectrons0;
+            numProtons = numProtons0;
+            numNeutrons = numNeutrons0;
+            speed = speed0;
+
+            hiddenContext.clearRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+            context.clearRect(0, 0, canvaId.width, canvaId.height);
+            
+            electrons = [];
+            window.cancelAnimationFrame(animationRef0);
+            window.cancelAnimationFrame(animationRef);
+
+            animationRef = 0;
+            animationRef0 = 0;
+
+            electrons = addElectrons(numElectrons);
+            animationRef0 = window.requestAnimationFrame(init);
+        }
+    </script>
+</body>
+</html>

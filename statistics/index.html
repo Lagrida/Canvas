@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>canvas | LAGRIDA</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+    <div style="margin-top: 20px">
+        <div class="title">
+            Google search dashboard canvas clone<br />
+            <span style="font-family:tahoma; font-size: 15px">Lagrida &copy;</span>
+        </div>
+        <div class="message" id="message" style="display:none">
+            <b id="theDate"></b>
+            <div style="margin-top: 10px">
+                <div style="display: inline-block; width: 10px; border-top: 4px solid #4285F4; vertical-align: middle;"></div> Nombre total de clicks sur les pages de recherche web &nbsp; <b id="visits"></b>
+            </div>
+        </div>
+        <div id="error" style="margin: 15px auto; text-align:center; color:red; font-size: 16px"></div>
+        <div style="height:350px" class="width">
+            <div style="margin-top: 5px; margin-bottom: 5px">
+                <button class="btn" onclick="saveDraw()">Download image</button>
+            </div>
+            <div id="loader" class="pos">
+                <div class="pos2">
+                    <div class="loader"></div>
+                </div>
+            </div>
+            <canvas id="canva1" style="display:none"></canvas>
+        </div>
+    </div>
+    <script>
+        /*
+            LAGRIDA Yassine Canvas
+            lagyassine@gmail.com
+            07/05/2021
+            &copy;
+        */
+        const message = document.querySelector("#message");
+        const visits = document.querySelector("#visits");
+        const theDate = document.querySelector("#theDate");
+        const errorDiv = document.querySelector("#error");
+        const loader = document.querySelector("#loader");
+
+        loader.style.top = loader.parentElement.offsetTop + 'px';
+        loader.style.left = loader.parentElement.offsetLeft + 'px';
+        loader.style.width = loader.parentElement.offsetWidth + 'px';
+        loader.style.height = loader.parentElement.offsetHeight + 'px';
+
+        const canvaId = document.querySelector("#canva1");
+        const context = canvaId.getContext("2d");
+
+        const axesVersion = document.createElement("canvas");
+        const axesVersionContext = axesVersion.getContext("2d");
+
+        const finalVersion = document.createElement("canvas");
+        const finalVersionContext = finalVersion.getContext("2d");
+
+        canvaId.width  = canvaId.parentElement.offsetWidth;
+        canvaId.height  = canvaId.parentElement.offsetHeight;
+
+        finalVersion.width  = canvaId.width;
+        finalVersion.height = canvaId.height;
+
+        axesVersion.width  = canvaId.width;
+        axesVersion.height = canvaId.height;
+
+        let boundry = {
+            width: canvaId.width,
+            height: canvaId.height
+        }
+
+        let pointsObj = [];
+        let maxValue = 0;
+        let points = 0;
+
+        const axesOffSet = 50;
+        const rightOffset = 50;
+        const axesY = 80;
+        
+
+        let widthStep = 0;
+        let step = 1;
+
+        let speed = 50;
+        let accumilatedSpeed = 0;
+
+        let animation = null;
+        
+        const getURL = "https://demos.lagrida.com/php_backend/canvas.php";
+
+        const numberAxesFuncReturn = num => {
+            const datesNum = Math.floor(points/num);
+            let datesIndice = [];
+            for(let i=0; i < num; i++){
+                datesIndice.push(i*datesNum);
+            }
+            datesIndice.push(points-1);
+            return {
+                value: num+1,
+                datesIndice
+            };
+        }
+        const numberAxeXFunc = width => {
+            if(width > 928){
+                return numberAxesFuncReturn(8);
+            }
+            else if(width > 874){
+                return numberAxesFuncReturn(7);
+            }
+            else if(width > 779){
+                return numberAxesFuncReturn(6);
+            }
+            else if(width > 649){
+                return numberAxesFuncReturn(5);
+            }
+            else if(width > 537){
+                return numberAxesFuncReturn(4);
+            }
+            else{
+                return numberAxesFuncReturn(3);
+            }
+        }
+
+        let numberAxeX = numberAxeXFunc(window.innerWidth);
+
+        window.addEventListener('resize', event => {
+            canvaId.width  = canvaId.parentElement.offsetWidth;
+            canvaId.height  = canvaId.parentElement.offsetHeight;
+
+            finalVersion.width  = canvaId.width;
+            finalVersion.height  = canvaId.height;
+
+            axesVersion.width  = canvaId.width;
+            axesVersion.height  = canvaId.height;
+
+            boundry = {
+                width: canvaId.width,
+                height: canvaId.height
+            }
+
+            loader.style.top = loader.parentElement.offsetTop + 'px';
+            loader.style.left = loader.parentElement.offsetLeft + 'px';
+            loader.style.width = loader.parentElement.offsetWidth + 'px';
+            loader.style.height = loader.parentElement.offsetHeight + 'px';
+
+            numberAxeX = numberAxeXFunc(window.innerWidth);
+            widthStep = (boundry.width-axesOffSet-rightOffset)/points;
+            context.save();
+            context.beginPath();
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, boundry.width, boundry.height);
+            context.restore();
+			
+            draw();
+        });
+        function draw(){
+            context.save();
+            context.beginPath();
+            context.moveTo(axesOffSet, boundry.height-axesOffSet);
+            context.lineWidth = 0.5;
+            context.strokeStyle = "black";
+            context.lineTo((boundry.width-rightOffset), boundry.height-axesOffSet);
+            context.stroke();
+            context.restore();
+
+            context.save();
+            context.beginPath();
+            context.font = '13px tahoma';
+            context.fillStyle = 'rgba(0,0,0,0.5)';
+            context.fillText(0, axesOffSet-20 , boundry.height-axesOffSet+4);
+            context.restore();
+            
+            for(let i=1; i <= 3; i++){
+
+                context.save();
+                context.beginPath();
+                context.strokeStyle = "#C3C3C3";
+                context.lineWidth = 0.3;
+                context.translate(axesOffSet, boundry.height-axesOffSet);
+                context.moveTo(0, -i*axesY);
+                context.lineTo((boundry.width-rightOffset-axesOffSet), -i*axesY);
+                context.stroke();
+                context.restore();
+
+                context.save();
+                context.beginPath();
+                context.font = '13px tahoma';
+                context.fillStyle = 'rgba(0,0,0,0.5)';
+                context.fillText(step*i, axesOffSet-30 , boundry.height-axesOffSet-i*axesY+5);
+                context.restore();
+            }
+            const width = Math.floor((boundry.width-rightOffset)/numberAxeX.value);
+
+            for(let i=0; i < numberAxeX.value; i++){
+
+                const thePointDate = new Date(pointsObj[numberAxeX.datesIndice[i]].date);
+                const day = thePointDate.getUTCDate();
+                const month = thePointDate.getUTCMonth()+1;
+                const dateText = (day < 10 ? '0' : '')+day+'/'+(month < 10 ? '0' : '')+month+'/'+thePointDate.getUTCFullYear();
+                
+                context.save();
+                context.beginPath();
+                context.font = '13px tahoma';
+                context.fillStyle = 'rgba(0,0,0,0.5)';
+
+                context.translate(axesOffSet, 0);
+
+                context.fillText(dateText, numberAxeX.datesIndice[i]*widthStep - 32 , boundry.height-axesOffSet+20);
+                context.restore();
+            }
+
+            axesVersionContext.save();
+            axesVersionContext.beginPath();
+            axesVersionContext.drawImage(canvaId, 0, 0, axesVersion.width, axesVersion.height);
+            axesVersionContext.restore();
+
+            context.save();
+            context.beginPath();
+            context.strokeStyle = "#4285F4";
+            context.lineWidth = 2;
+            context.translate(axesOffSet, boundry.height-axesOffSet);
+            context.lineJoin = 'bevel';
+            context.moveTo(0, 0);
+            for(let i=0; i < points; i++){
+                context.lineTo(i*widthStep, 0);
+            }
+            context.stroke();
+            context.restore();
+            animation = window.requestAnimationFrame(drawAnimation);
+        }
+        function drawAnimation(timestamps){
+            accumilatedSpeed -= speed;
+            let newSpeed = axesY*accumilatedSpeed/step;
+            context.save();
+            context.beginPath();
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, canvaId.width, canvaId.height);
+            context.drawImage(axesVersion, 0, 0, canvaId.width, canvaId.height);
+            context.restore();
+
+            context.save();
+            context.beginPath();
+            context.strokeStyle = "#4285F4";
+            context.lineWidth = 2;
+            context.translate(axesOffSet, boundry.height-axesOffSet);
+            context.lineJoin = 'bevel';
+            //context.moveTo(0, 0);
+            for(let i=0; i < points; i++){
+                let realY = Math.max(newSpeed, pointsObj[i].value);
+                let newY = axesY*realY/step;
+                context.lineTo(i*widthStep, newY);
+            }
+            context.stroke();
+            context.restore();
+            if(Math.abs(newSpeed) > maxValue){
+
+                window.cancelAnimationFrame(animation);
+
+                finalVersionContext.save();
+                finalVersionContext.beginPath();
+                finalVersionContext.drawImage(canvaId, 0, 0, finalVersion.width, finalVersion.height);
+                finalVersionContext.restore();
+            }else{
+                animation = window.requestAnimationFrame(drawAnimation);
+            }
+        }
+        function restoreState(){
+            context.save();
+            context.beginPath();
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, canvaId.width, canvaId.height);
+            context.drawImage(finalVersion, 0, 0, canvaId.width, canvaId.height);
+            context.restore();
+
+            message.style.display = "none";
+        }
+        canvaId.addEventListener('mouseout', event => {
+            restoreState();
+        });
+        const days2Frensh = ['dimanche', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi'];
+        const months2Frensh = ['janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+
+        canvaId.addEventListener('mousemove', event => {
+
+            let x = event.pageX - canvaId.offsetLeft;
+            let y = event.pageY - canvaId.offsetTop;
+
+            const radius = 4;
+
+            const a = boundry.height - axesOffSet;
+            const b = a - 3 * axesY
+            if(x > axesOffSet && x < (boundry.width - rightOffset - 2) && y <= a && y > b){
+                x = x - axesOffSet;
+                context.save();
+                context.beginPath();
+                context.fillStyle = 'white';
+                context.fillRect(0, 0, canvaId.width, canvaId.height);
+                context.drawImage(finalVersion, 0, 0, canvaId.width, canvaId.height);
+                context.restore();
+
+                let i = Math.floor(x/widthStep);
+                context.save();
+                context.beginPath();
+                context.fillStyle = "#4285F4";
+                context.translate(axesOffSet, boundry.height-axesOffSet);
+                let realY = pointsObj[i].value;
+                let newY = axesY*realY/step;
+                context.translate(i*widthStep, newY);
+                context.arc(0, 0, radius, 0, 2*Math.PI);
+                context.fill();
+                context.restore();
+
+                context.save();
+                context.beginPath();
+                context.translate(axesOffSet, boundry.height-axesOffSet);
+                context.strokeStyle = "#000000";
+                context.lineWidth = 1;
+                context.setLineDash([1, 1]);
+                context.moveTo(i*widthStep, 0);
+                context.lineTo(i*widthStep, - 3*axesY);
+                context.stroke();
+                context.restore();
+
+                const aaaa = boundry.height - 3*axesY - axesOffSet;
+                const bbbb = 3*axesY + newY;
+                const offsetY = aaaa + bbbb + canvaId.offsetTop - message.offsetHeight - 10;
+                const offsetX = i*widthStep + axesOffSet + canvaId.offsetLeft + 10;
+
+                const messageWidth = message.offsetWidth;
+
+                const cccc = window.innerWidth - offsetX - 10;
+                const ddddX = offsetX - messageWidth - 20;
+                if(cccc > messageWidth){
+                    message.style.top = offsetY + 'px';
+                    message.style.left = offsetX + 'px';
+                }
+                else if(ddddX > 0){
+                    message.style.top = offsetY + 'px';
+                    message.style.left = ddddX + 'px';
+                }
+                else{
+                    message.style.top = offsetY + 'px';
+                    message.style.left = 0 + 'px';
+                }
+                visits.innerText = -realY;
+                const thePointDate = new Date(pointsObj[i].date);
+                theDate.innerText = days2Frensh[thePointDate.getDay()] + ' ' + thePointDate.getUTCDate() + ' ' + months2Frensh[thePointDate.getUTCMonth()];
+                message.style.display = "block";
+            }else{
+                restoreState();
+            }
+        });
+        const saveDraw = () => {
+            let dataUrl = canvaId.toDataURL("image/png", 1.0);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = dataUrl;
+            downloadLink.target = '_self';
+            downloadLink.download = 'statistics';
+            downloadLink.click();
+        }
+        const newFetch = (url, method='GET', data = {}) => {
+            return new Promise((resolve, reject) => {
+                let infos = {
+                    method,
+                    headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                    }
+                }
+                if(method != 'GET' && method != 'HEAD'){
+                    infos = {
+                        ...infos,
+                        body: JSON.stringify(data)
+                    }
+                }
+                fetch(url, infos)
+                .then(response => {
+                    if (response.ok){
+                        response.text().then(r => {
+                            resolve({
+                                response,
+                                data: JSON.parse(r)
+                            })
+                        });
+                    }else{
+                        response.text().then(r => {
+                            reject({
+                                response,
+                                data: JSON.parse(r)
+                            })
+                        });
+                    }
+                })
+                .catch(error => {                    
+                    errorDiv.innerHTML = error;
+                    loader.style.display = 'none';
+                })
+            });
+        }
+        window.addEventListener('load', event => {
+            newFetch(getURL)
+            .then(response => {
+                pointsObj = response.data.pointsObj;
+                maxValue = response.data.max;
+                points = response.data.points;
+
+                widthStep = points == 0 ? 0 : (boundry.width-axesOffSet-rightOffset)/points;
+                step = Math.ceil(maxValue/3);
+
+                numberAxeX = numberAxeXFunc(window.innerWidth);
+                let animation = null;
+                loader.style.display = 'none';
+                canvaId.style.display = 'block';
+                
+                draw();
+            })
+            .catch(error => {
+                if(error.data){
+                    const errorCode = error.response.status;
+                    const errorText = error.response.statusText;
+                    errorDiv.innerHTML = "Error " + errorCode + " : " + errorText + "<br />" + error?.data?.message;
+                }else{
+                    errorDiv.innerHTML = error;
+                }
+                loader.style.display = 'none';
+            })
+            .finally(() => {
+
+            });
+        });
+    </script>
+</body>
+</html>
